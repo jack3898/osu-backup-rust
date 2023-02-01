@@ -1,12 +1,9 @@
 mod input;
 
 use input::cli::Cli;
-use std::env;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let mut cli = Cli::new();
 
-    let cli = Cli::new(args);
-
-    println!("{:?}", cli.get_args().directory)
+    println!("{:?}", cli.get_args().directory.as_ref().unwrap())
 }

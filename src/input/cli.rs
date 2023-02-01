@@ -1,21 +1,24 @@
 use super::args::Args;
 use std::collections::HashMap;
+use std::env;
 
 pub struct Cli {
-    args: Vec<String>,
+    env_args: Vec<String>,
+    args: Args,
 }
 
 impl Cli {
-    pub fn new(arg_collection: Vec<String>) -> Cli {
+    pub fn new<'a>() -> Cli {
         Cli {
-            args: arg_collection,
+            env_args: env::args().collect(),
+            args: Args::new(),
         }
     }
 
     fn key_value_pairs(&self) -> HashMap<String, String> {
         let parsed_args: HashMap<String, String> = HashMap::new();
 
-        let key_value_pairs = &self.args.iter().fold(parsed_args, |mut acc, cur| {
+        let key_value_pairs = &self.env_args.iter().fold(parsed_args, |mut acc, cur| {
             let key_value: Vec<&str> = cur.split("=").collect();
 
             if key_value.len() == 2 {
@@ -30,12 +33,11 @@ impl Cli {
         key_value_pairs.clone()
     }
 
-    pub fn get_args(&self) -> Args {
-        let mut args = Args::new();
+    pub fn get_args<'a>(&'a mut self) -> &Args {
         let arg_hashmap = self.key_value_pairs();
 
-        args.add_directory(arg_hashmap.get("directory"));
+        self.args.add_directory(arg_hashmap.get("directory"));
 
-        args
+        &self.args
     }
 }
