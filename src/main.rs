@@ -1,12 +1,12 @@
-mod cli;
-use std::env;
+mod input;
 
-use cli::Cli;
+use input::cli::Cli;
+use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     let cli = Cli::new(args);
 
-    println!("{:?}", cli.key_value_pairs())
+    println!("{:?}", cli.get_args().directory)
 }
