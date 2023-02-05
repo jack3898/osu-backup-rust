@@ -11,31 +11,27 @@ impl OsuFs<'_> {
     pub fn get_beatmap_dirs(&self) -> Result<Vec<BeatmapDir>, io::Error> {
         let dir_contents_result = self.path.join("Songs").read_dir();
         let dir_contents = unwrap_result_or_return_err!(dir_contents_result);
-        let mut beatmap_dirs: Vec<BeatmapDir> = vec![];
 
-        for dir_entry_result in dir_contents {
-            let dir_entry = unwrap_result_or!(dir_entry_result, {
-                println!("There was a problem opening the a beatmap directory.");
+        let beatmap_dirs: Vec<BeatmapDir> = dir_contents
+            .filter_map(|dir_entry_result| {
+                let dir_entry = unwrap_result_or!(dir_entry_result, { return None });
 
-                continue;
-            });
+                let os_file_name = dir_entry.file_name();
+                let file_name_str = os_file_name.to_str();
+                let file_name = unwrap_option_or!(file_name_str, { return None });
+                let file_name_split = file_name.split_once(' ');
 
-            let os_file_name = dir_entry.file_name();
+                let (id, title) = unwrap_option_or!(file_name_split, { return None });
 
-            let file_name_str = os_file_name.to_str();
-            let file_name = unwrap_option_or!(file_name_str, { continue });
-            let file_name_split = file_name.split_once(' ');
+                let dir = BeatmapDir {
+                    id: String::from(id),
+                    title: String::from(title),
+                    path: dir_entry.path(),
+                };
 
-            let (id, title) = unwrap_option_or!(file_name_split, { continue });
-
-            let beatmap_dir = BeatmapDir {
-                id: String::from(id),
-                title: String::from(title),
-                path: dir_entry.path(),
-            };
-
-            beatmap_dirs.push(beatmap_dir);
-        }
+                Some(dir)
+            })
+            .collect();
 
         Ok(beatmap_dirs)
     }
