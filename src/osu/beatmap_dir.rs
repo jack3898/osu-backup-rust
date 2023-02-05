@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs::ReadDir, io, path::PathBuf};
 
 pub struct BeatmapDir {
     pub id: String,
@@ -11,10 +11,7 @@ impl BeatmapDir {
         format!("{} {}", self.id, self.title)
     }
 
-    pub fn dir_path(&self) -> PathBuf {
-        let mut cloned_path = self.path.clone();
-        cloned_path.push(self.dir_name());
-
-        cloned_path
+    pub fn read_dir(&self) -> Result<ReadDir, io::Error> {
+        self.path.read_dir()
     }
 }

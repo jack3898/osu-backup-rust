@@ -1,6 +1,6 @@
 use super::{beatmap::Beatmap, beatmap_dir::BeatmapDir};
 use crate::{unwrap_option_or, unwrap_result_or, unwrap_result_or_return_err};
-use std::{env, io, path::Path};
+use std::{env, fs::ReadDir, io, path::Path};
 
 #[derive(Copy, Clone)]
 pub struct OsuFs<'a> {
@@ -19,8 +19,12 @@ impl OsuFs<'_> {
         osu_dir
     }
 
+    pub fn read_songs_dir(&self) -> Result<ReadDir, io::Error> {
+        self.path.join("Songs").read_dir()
+    }
+
     pub fn get_beatmap_dirs(&self) -> Result<Vec<BeatmapDir>, io::Error> {
-        let dir_contents_result = self.path.join("Songs").read_dir();
+        let dir_contents_result = self.read_songs_dir();
         let dir_contents = unwrap_result_or_return_err!(dir_contents_result);
 
         let beatmap_dirs: Vec<BeatmapDir> = dir_contents
@@ -66,8 +70,6 @@ impl OsuFs<'_> {
             dir: &beatmap,
             online_url: beatmap_url,
             osu_direct_url,
-            mp3s: vec![],
-            jpgs: vec![],
         };
 
         Some(song)

@@ -20,6 +20,17 @@ fn main() {
     for beatmap_dir in beatmap_dirs.iter() {
         let beatmap = osu_fs.expand_beatmap_details(beatmap_dir).unwrap();
 
-        println!("{:?}", beatmap.dir.dir_path());
+        let images = beatmap.get_images();
+
+        for image in images {
+            let name = image.file_name;
+            let filter = image::imageops::FilterType::CatmullRom;
+
+            image
+                .image_result
+                .unwrap()
+                .resize(1280, 720, filter)
+                .save(format!("C:\\Users\\Jack\\Downloads\\{}", name));
+        }
     }
 }
