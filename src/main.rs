@@ -2,13 +2,17 @@ mod input;
 mod macros;
 mod osu;
 
-use crate::osu::fs::OsuFs;
+use crate::osu::osu_fs::OsuFs;
+use input::cli::Cli;
 use std::path::Path;
 
 fn main() {
+    let mut cli = Cli::new();
+    let default_osu_dir = OsuFs::get_default_osu_dir();
+    let osu_dir = cli.get_args().get_directory().unwrap_or(&default_osu_dir);
+
     let osu_fs = OsuFs {
-        // Will remove absolute path later!
-        path: Path::new("C:\\Users\\Jack\\AppData\\Local\\osu!"),
+        path: Path::new(osu_dir.as_str()),
     };
 
     let beatmap_dirs = osu_fs.get_beatmap_dirs().unwrap();

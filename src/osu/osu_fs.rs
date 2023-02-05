@@ -1,6 +1,6 @@
 use super::{beatmap::Beatmap, beatmap_dir::BeatmapDir};
 use crate::{unwrap_option_or, unwrap_result_or, unwrap_result_or_return_err};
-use std::{io, path::Path};
+use std::{env, io, path::Path};
 
 #[derive(Copy, Clone)]
 pub struct OsuFs<'a> {
@@ -8,6 +8,17 @@ pub struct OsuFs<'a> {
 }
 
 impl OsuFs<'_> {
+    /**
+     * Get the default osu directory using the LocalAppData env var built into Windows.
+     */
+    pub fn get_default_osu_dir() -> String {
+        let mut osu_dir = env::var("LocalAppData").unwrap();
+
+        osu_dir.push_str("\\osu!");
+
+        osu_dir
+    }
+
     pub fn get_beatmap_dirs(&self) -> Result<Vec<BeatmapDir>, io::Error> {
         let dir_contents_result = self.path.join("Songs").read_dir();
         let dir_contents = unwrap_result_or_return_err!(dir_contents_result);
