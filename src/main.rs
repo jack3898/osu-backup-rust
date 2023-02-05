@@ -1,4 +1,5 @@
 mod input;
+mod macros;
 mod osu;
 
 use crate::osu::fs::OsuFs;
