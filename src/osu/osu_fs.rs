@@ -1,5 +1,4 @@
 use super::{beatmap::Beatmap, beatmap_dir::BeatmapDir};
-use crate::{unwrap_option_or, unwrap_result_or, unwrap_result_or_return_err};
 use std::{env, fs::ReadDir, io, path::Path};
 
 #[derive(Copy, Clone)]
@@ -24,19 +23,15 @@ impl OsuFs<'_> {
     }
 
     pub fn get_beatmap_dirs(&self) -> Result<Vec<BeatmapDir>, io::Error> {
-        let dir_contents_result = self.read_songs_dir();
-        let dir_contents = unwrap_result_or_return_err!(dir_contents_result);
+        let dir_contents = self.read_songs_dir()?;
 
         let beatmap_dirs: Vec<BeatmapDir> = dir_contents
             .filter_map(|dir_entry_result| {
-                let dir_entry = unwrap_result_or!(dir_entry_result, { return None });
+                let dir_entry = dir_entry_result.ok()?;
 
                 let os_file_name = dir_entry.file_name();
-                let file_name_str = os_file_name.to_str();
-                let file_name = unwrap_option_or!(file_name_str, { return None });
-                let file_name_split = file_name.split_once(' ');
-
-                let (id, title) = unwrap_option_or!(file_name_split, { return None });
+                let file_name = os_file_name.to_str()?;
+                let (id, title) = file_name.split_once(' ')?;
 
                 let dir = BeatmapDir {
                     id: String::from(id),
@@ -52,17 +47,6 @@ impl OsuFs<'_> {
     }
 
     pub fn expand_beatmap_details<'a>(self, beatmap: &'a BeatmapDir) -> Option<Beatmap<'a>> {
-        let song_path = self.path.join("Songs").join(beatmap.dir_name());
-        let open_song_dir = song_path.read_dir();
-
-        let song_dir = unwrap_result_or!(open_song_dir, {
-            println!("There was a problem opening the song directory.");
-
-            return None;
-        });
-
-        println!("{}", song_dir.count());
-
         let beatmap_url = format!("https://osu.ppy.sh/beatmapsets/{}", beatmap.id);
         let osu_direct_url = format!("osu://b/{}", beatmap.id);
 

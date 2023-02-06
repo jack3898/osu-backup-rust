@@ -1,7 +1,5 @@
 use super::beatmap_dir::BeatmapDir;
-use crate::{unwrap_option_or, unwrap_result_or};
-use image::{DynamicImage, ImageResult};
-use std::fs::DirEntry;
+use image::DynamicImage;
 
 pub struct Beatmap<'a> {
     pub dir: &'a BeatmapDir,
@@ -17,34 +15,26 @@ impl Beatmap<'_> {
             .expect("Unable to open the contents of the song directory.");
 
         let jpgs: Vec<JpgFile> = contents
-            .filter_map(|item_result| {
-                let item_option: Option<DirEntry> = match item_result {
-                    Ok(item) => Some(item),
-                    Err(_) => None,
+            .filter_map(|dir_entry_result| -> Option<JpgFile> {
+                let dir_entry = dir_entry_result.ok()?;
+                let image_read = image::io::Reader::open(dir_entry.path()).ok()?;
+                let image_formatted = image_read.format()?;
+
+                if !image::ImageFormat::can_read(&image_formatted) {
+                    return None;
+                }
+
+                let song_dir = dir_entry.path().to_str()?.to_owned();
+                let file_name = dir_entry.file_name().to_str()?.to_owned();
+                let image_result = image_read.decode().ok()?;
+
+                let image_file = JpgFile {
+                    song_dir,
+                    file_name,
+                    image_result,
                 };
 
-                let item = item_option.unwrap();
-
-                if str::ends_with(item.file_name().to_str().unwrap(), ".jpg") {
-                    let image_result = image::io::Reader::open(item.path());
-                    let image_reader = unwrap_result_or!(image_result, { return None });
-
-                    let save_path = item.path().to_str().unwrap().to_owned();
-
-                    let os_file_name = item.file_name();
-                    let file_name_option = os_file_name.to_str();
-                    let file_name = unwrap_option_or!(file_name_option, { return None });
-
-                    let image_file = JpgFile {
-                        image_result: image_reader.decode(),
-                        song_dir: save_path,
-                        file_name: file_name.to_owned().repeat(2),
-                    };
-
-                    return Some(image_file);
-                };
-
-                None::<JpgFile>
+                Some(image_file)
             })
             .collect();
 
@@ -53,7 +43,7 @@ impl Beatmap<'_> {
 }
 
 pub struct JpgFile {
-    pub image_result: ImageResult<DynamicImage>,
+    pub image_result: DynamicImage,
     pub song_dir: String,
     pub file_name: String,
 }

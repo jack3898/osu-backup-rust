@@ -1,5 +1,3 @@
-use crate::unwrap_option_or;
-
 pub struct Args {
     pub directory: Option<String>,
 }
@@ -16,9 +14,6 @@ impl Args {
     }
 
     pub fn get_directory(&self) -> Option<&String> {
-        let this_dir = &self.directory;
-        let dir = unwrap_option_or!(this_dir, { return None });
-
-        Some(dir)
+        self.directory.as_ref()
     }
 }

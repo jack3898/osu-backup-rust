@@ -1,10 +1,9 @@
 mod input;
-mod macros;
 mod osu;
 
 use crate::osu::osu_fs::OsuFs;
 use input::cli::Cli;
-use std::path::Path;
+use std::{path::Path, thread};
 
 fn main() {
     let mut cli = Cli::new();
@@ -22,15 +21,29 @@ fn main() {
 
         let images = beatmap.get_images();
 
-        for image in images {
+        let image_threads = images.into_iter().map(|image| {
+            println!("Processing a new image...");
             let name = image.file_name;
             let filter = image::imageops::FilterType::CatmullRom;
 
-            image
-                .image_result
-                .unwrap()
-                .resize(1280, 720, filter)
-                .save(format!("C:\\Users\\Jack\\Downloads\\{}", name));
+            let handle = thread::spawn(move || {
+                image
+                    .image_result
+                    .resize(1280, 720, filter)
+                    .blur(5.0)
+                    .into_rgb8()
+                    .save_with_format(
+                        format!("C:\\Users\\Jack\\Downloads\\{}", name),
+                        image::ImageFormat::Jpeg,
+                    )
+                    .expect("2");
+            });
+
+            handle
+        });
+
+        for image_processor_handle in image_threads {
+            image_processor_handle.join().unwrap();
         }
     }
 }
