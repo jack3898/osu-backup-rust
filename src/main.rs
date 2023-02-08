@@ -1,11 +1,17 @@
 mod input;
 mod osu;
 
-use crate::osu::osu_fs::OsuFs;
-use input::cli::Cli;
-use std::{path::Path, thread};
+extern crate futures;
 
-fn main() {
+use crate::osu::osu_fs::OsuFs;
+use futures::future::join_all;
+use image::ImageError;
+use input::cli::Cli;
+use std::path::Path;
+use tokio::runtime::Handle;
+
+#[tokio::main]
+async fn main() {
     let mut cli = Cli::new();
     let default_osu_dir = OsuFs::get_default_osu_dir();
     let osu_dir = cli.get_args().get_directory().unwrap_or(&default_osu_dir);
@@ -18,32 +24,30 @@ fn main() {
 
     for beatmap_dir in beatmap_dirs.iter() {
         let beatmap = osu_fs.expand_beatmap_details(beatmap_dir).unwrap();
-
         let images = beatmap.get_images();
+        let filter = image::imageops::FilterType::CatmullRom;
+        let format = image::ImageFormat::Jpeg;
+        let handle = Handle::current();
 
-        let image_threads = images.into_iter().map(|image| {
-            println!("Processing a new image...");
-            let name = image.file_name;
-            let filter = image::imageops::FilterType::CatmullRom;
+        let image_threads: Vec<tokio::task::JoinHandle<Result<(), ImageError>>> = images
+            .into_iter()
+            .filter_map(|image| {
+                println!("Processing a new image...");
+                let name = image.file_name;
+                let location = format!("C:\\Users\\Jack\\Downloads\\{}", name);
 
-            let handle = thread::spawn(move || {
-                image
-                    .image_result
-                    .resize(1280, 720, filter)
-                    .blur(5.0)
-                    .into_rgb8()
-                    .save_with_format(
-                        format!("C:\\Users\\Jack\\Downloads\\{}", name),
-                        image::ImageFormat::Jpeg,
-                    )
-                    .expect("2");
-            });
+                let join_handle = handle.spawn(async move {
+                    image
+                        .image_result
+                        .resize(1280, 720, filter)
+                        .into_rgb8()
+                        .save_with_format(location, format)
+                });
 
-            handle
-        });
+                Some(join_handle)
+            })
+            .collect();
 
-        for image_processor_handle in image_threads {
-            image_processor_handle.join().unwrap();
-        }
+        join_all(image_threads).await;
     }
 }
